@@ -1,33 +1,23 @@
 import mne
 import numpy as np
 
-def load_and_preprocess(subject=1, runs=[6, 10], channels=['C3', 'C4'], l_freq=7, h_freq=30, target_freq=128):
-    """
-    Loads EEGBCI motor imagery data for a given subject and runs,
-    applies bandpass filtering and resampling,
-    and selects specified channels (default C3 and C4).
-    Returns preprocessed MNE Raw object.
-    """
-    # Download and load data files
-    file_paths = mne.datasets.eegbci.load_data(subject, runs)
+def load_and_preprocess(subject=1, runs=[6, 10]):
+    raw = mne.concatenate_raws([
+        mne.io.read_raw_edf(f"{data_path}/S{subject:03d}/S{subject:03d}R{run:02d}.edf", preload=True)
+        for run in runs
+    ])
+    
+    raw.pick_types(eeg=True)
+    raw.filter(7., 30., fir_design='firwin')
+    
+    events, _ = mne.events_from_annotations(raw)
+    event_id = dict(T1=2, T2=3)  # T1: left, T2: right
 
-    # Load and concatenate all runs
-    raws = [mne.io.read_raw_edf(fp, preload=True) for fp in file_paths]
-    raw = mne.concatenate_raws(raws)
-
-    # Standardize channel names (e.g., "C3." → "C3")
-    raw.rename_channels(lambda x: x.strip('.'))
-
-    # Pick desired channels (default: motor cortex)
-    raw.pick_channels(channels)
-
-    # Apply bandpass filter
-    raw.filter(l_freq, h_freq, fir_design='firwin')
-
-    # Resample to lighter frequency
-    raw.resample(target_freq)
-
-    return raw
+    epochs = mne.Epochs(raw, events, event_id, tmin=0.0, tmax=2.0, 
+                        picks='eeg', baseline=None, preload=True)
+    X = epochs.get_data()
+    y = epochs.events[:, -1] - 2  # 0 = left, 1 = right
+    return raw, X, y
 
 
 def extract_epochs_and_labels(raw, tmin=0, tmax=4):
