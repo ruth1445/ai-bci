@@ -1,6 +1,6 @@
 import openai
 
-client = openai.OpenAI()  # uses OPENAI_API_KEY from env by default
+client = openai.OpenAI() 
 
 def generate_feedback(prediction, confidence=None, history=None):
     """
