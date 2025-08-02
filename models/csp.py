@@ -7,10 +7,19 @@ from mne.decoding import CSP
 
 def run_csp_svm(X, y, test_size=0.2, n_components=2):
     """
-    Apply CSP + SVM to EEG data.
-    Returns accuracy and fitted pipeline.
+    Applies CSP for feature extraction and trains an SVM classifier.
+    
+    Parameters:
+    - X: EEG data (n_trials, n_channels, n_times)
+    - y: Binary labels (0 or 1)
+    - test_size: Proportion of data to use as test set
+    - n_components: Number of CSP components to keep
+    
+    Returns:
+    - accuracy: Test set accuracy
+    - model: Trained CSP + SVM pipeline
     """
-    # Split into train/test sets
+    # Train/test split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, stratify=y, random_state=42
     )
@@ -24,11 +33,12 @@ def run_csp_svm(X, y, test_size=0.2, n_components=2):
         ('svm', SVC(kernel='linear', C=1.0, probability=True))
     ])
 
-    # Train
+    # Train pipeline
     clf.fit(X_train, y_train)
 
-    # Predict
+    # Predict on test set
     y_pred = clf.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
 
     return acc, clf
+
